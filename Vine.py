@@ -61,7 +61,7 @@ def download_post_data(post_id, user_folder):
         print(f"Created folder for post {post_id}")
 
         thumbnail_url = post_data["thumbnailUrl"]
-        video_url = post_data.get("videoUrl", post_data.get("videoLowURL"))
+        video_url = post_data.get("videoLowURL", post_data.get("videoURL"))
 
         download_file(thumbnail_url, post_folder, f"{post_id}_thumbnail.jpg")
         print(f"Downloaded thumbnail for post {post_id}")
