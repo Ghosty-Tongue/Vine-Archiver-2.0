@@ -9,12 +9,11 @@ Make sure you have the following libraries installed:
 - `os`
 - `requests`
 - `datetime`
-- `concurrent.futures.ThreadPoolExecutor`
 - `tqdm`
 
 You can install them using:
 
-```pip install requests tqdm datetime```
+```pip install requests tqdm datetime os```
 
 ## Usage
 
