@@ -19,7 +19,7 @@ get_vine_user_data() {
 
     if [[ $(echo "$response" | jq -r '.status') == "200" ]]; then
         local created=$(echo "$response" | jq -r '.created')
-        created=$(date -j -f "%Y-%m-%dT%H:%M:%S" "$created" '+%B %d, %Y %I:%M:%S %p')
+        created=$(date -jf "%Y-%m-%dT%H:%M:%S" "$created" '+%B %d, %Y %I:%M:%S %p')
         echo "$response" | jq --arg created "$created" '.created = $created'
     else
         echo "Error: Could not retrieve user data." >&2
@@ -133,7 +133,7 @@ Follower Count: $(echo "$additional_info" | jq -r '.followerCount // "N/A"')
 EOF
 }
 
-# Function to download # a file from URL
+# Function to download a file from URL
 download_file() {
     local url="$1"
     local folder="$2"
