@@ -1,10 +1,14 @@
 #!/bin/bash
 
+# Function to install jq using brew
+install_jq() {
+    echo "Installing jq..."
+    brew install jq
+}
+
 # Check if jq is installed, if not, install it
 if ! command -v jq &> /dev/null; then
-    echo "jq is not installed. Installing..."
-    sudo apt-get update
-    sudo apt-get install jq -y
+    install_jq
 fi
 
 # Function to retrieve user data from Vine API
@@ -15,7 +19,7 @@ get_vine_user_data() {
 
     if [[ $(echo "$response" | jq -r '.status') == "200" ]]; then
         local created=$(echo "$response" | jq -r '.created')
-        created=$(date -d "$created" '+%B %d, %Y %I:%M:%S %p')
+        created=$(date -j -f "%Y-%m-%dT%H:%M:%S" "$created" '+%B %d, %Y %I:%M:%S %p')
         echo "$response" | jq --arg created "$created" '.created = $created'
     else
         echo "Error: Could not retrieve user data." >&2
@@ -112,7 +116,7 @@ create_user_folder() {
         curl -s "$avatar_url" -o "${user_folder}/${username}_avatar.jpg" || { echo "Error: Could not download avatar for user $username." >&2; exit 1; }
     fi
 
-    local additional_info=$(get_additional_user_info "$(echo "$profile_data" | jq -r '.userIdStr')")
+    local additional_info=$(get_additional_user_info "$(echo "$profile_data"  | jq -r '.userIdStr')")
     cat <<EOF > "${user_folder}/${username}_info.txt"
 Status: $(echo "$profile_data" | jq -r '.status // "N/A"')
 Vanity URLs: $(echo "$profile_data" | jq -r '.vanityUrls // "N/A"')
