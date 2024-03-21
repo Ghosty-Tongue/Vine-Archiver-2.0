@@ -17,10 +17,8 @@ get_vine_user_data() {
     local url="https://archive.vine.co/profiles/_/${user_id_str}.json"
     local response=$(curl -s "$url")
 
-    if [[ $(echo "$response" | jq -r '.status') == "200" ]]; then
-        local created=$(echo "$response" | jq -r '.created')
-        created=$(date -jf "%Y-%m-%dT%H:%M:%S" "$created" '+%B %d, %Y %I:%M:%S %p')
-        echo "$response" | jq --arg created "$created" '.created = $created'
+    if [[ $(echo "$response" | grep -o '"status": *[0-9]*' | grep -o '[0-9]*') == "200" ]]; then
+        echo "$response"
     else
         echo "Error: Could not retrieve user data." >&2
         exit 1
@@ -41,9 +39,8 @@ get_vine_user_info() {
 
     response=$(curl -s "$url")
 
-    if [[ $(echo "$response" | jq -r '.status') == "200" ]]; then
-        local user_id_str=$(echo "$response" | jq -r '.data.userIdStr')
-        get_vine_user_data "$user_id_str"
+    if [[ $(echo "$response" | grep -o '"status": *[0-9]*' | grep -o '[0-9]*') == "200" ]]; then
+        echo "$response"
     else
         echo "Error: Could not retrieve user information." >&2
         exit 1
@@ -53,7 +50,7 @@ get_vine_user_info() {
 # Function to collect post IDs from user profile data
 collect_post_ids() {
     local profile_data="$1"
-    echo "$profile_data" | jq -r '.posts[]'
+    echo "$profile_data" | grep -o '"postId": *"[^"]*"' | grep -o '"[^"]*"$' | tr -d '"'
 }
 
 # Function to download post data
@@ -63,94 +60,21 @@ download_post_data() {
     local url="https://archive.vine.co/posts/${post_id}.json"
     local response=$(curl -s "$url")
 
-    if [[ $(echo "$response" | jq -r '.status') == "200" ]]; then
-        local post_data="$response"
+    if [[ $(echo "$response" | grep -o '"status": *[0-9]*' | grep -o '[0-9]*') == "200" ]]; then
         local post_folder="${user_folder}/post_${post_id}"
         mkdir -p "$post_folder" || { echo "Error: Could not create folder for post $post_id." >&2; exit 1; }
 
-        local thumbnail_url=$(echo "$post_data" | jq -r '.thumbnailUrl')
-        local video_url=$(echo "$post_data" | jq -r '.videoLowURL // .videoURL')
+        local thumbnail_url=$(echo "$response" | grep -o '"thumbnailUrl": *"[^"]*"' | grep -o '"[^"]*"$' | tr -d '"')
+        local video_url=$(echo "$response" | grep -E -o '"videoLowURL": *"[^"]*"' | grep -o '"[^"]*"$' | tr -d '"')
 
         curl -s "$thumbnail_url" -o "${post_folder}/${post_id}_thumbnail.jpg" || { echo "Error: Could not download thumbnail for post $post_id." >&2; exit 1; }
 
         if [[ ! -z "$video_url" ]]; then
             curl -s "$video_url" -o "${post_folder}/${post_id}_video.mp4" || { echo "Error: Could not download video for post $post_id." >&2; exit 1; }
         fi
-
-        save_post_data "$post_data" "$post_folder" "${post_id}_post_data.txt"
     else
         echo "Error: Could not retrieve data for post $post_id." >&2
         exit 1
-    fi
-}
-
-# Function to save post data to a text file
-save_post_data() {
-    local post_data="$1"
-    local folder="$2"
-    local filename="$3"
-    local description=$(echo "$post_data" | jq -r '.description // "N/A"')
-    local likes=$(echo "$post_data" | jq -r '.likes // "N/A"')
-    local reposts=$(echo "$post_data" | jq -r '.reposts // "N/A"')
-    local loops=$(echo "$post_data" | jq -r '.loops // "N/A"')
-    local title=$(echo "$post_data" | jq -r '.entities[0].title // "N/A"')
-
-    cat <<EOF > "${folder}/${filename}"
-Description: $description
-Likes: $likes
-Reposts: $reposts
-Loops: $loops
-Title: $title
-EOF
-}
-
-# Function to create user folder and download user info
-create_user_folder() {
-    local username="$1"
-    local profile_data="$2"
-    local user_folder="./$username"
-    mkdir -p "$user_folder" || { echo "Error: Could not create folder for user $username." >&2; exit 1; }
-
-    local avatar_url=$(echo "$profile_data" | jq -r '.avatarUrl')
-    if [[ ! -z "$avatar_url" ]]; then
-        curl -s "$avatar_url" -o "${user_folder}/${username}_avatar.jpg" || { echo "Error: Could not download avatar for user $username." >&2; exit 1; }
-    fi
-
-    local additional_info=$(get_additional_user_info "$(echo "$profile_data"  | jq -r '.userIdStr')")
-    cat <<EOF > "${user_folder}/${username}_info.txt"
-Status: $(echo "$profile_data" | jq -r '.status // "N/A"')
-Vanity URLs: $(echo "$profile_data" | jq -r '.vanityUrls // "N/A"')
-Created: $(echo "$profile_data" | jq -r '.created // "N/A"')
-User ID: $(echo "$profile_data" | jq -r '.userId // "N/A"')
-Posts Count: $(echo "$profile_data" | jq -r '.postCount // "N/A"')
-Share URL: $(echo "$profile_data" | jq -r '.shareUrl // "N/A"')
-Loop Count: $(echo "$additional_info" | jq -r '.loopCount // "N/A"')
-Description: $(echo "$additional_info" | jq -r '.description // "N/A"')
-Twitter Screenname: $(echo "$additional_info" | jq -r '.twitterScreenname // "N/A"')
-Location: $(echo "$additional_info" | jq -r '.location // "N/A"')
-Avatar URL: $(echo "$additional_info" | jq -r '.avatarUrl // "N/A"')
-Follower Count: $(echo "$additional_info" | jq -r '.followerCount // "N/A"')
-EOF
-}
-
-# Function to download a file from URL
-download_file() {
-    local url="$1"
-    local folder="$2"
-    local filename="$3"
-    curl -s "$url" -o "${folder}/${filename}" || { echo "Error: Could not download file $filename from $url." >&2; exit 1; }
-}
-
-# Function to get additional user info from Vine API
-get_additional_user_info() {
-    local user_id_str="$1"
-    local url="https://vine.co/api/users/profiles/${user_id_str}"
-    local response=$(curl -s "$url")
-
-    if [[ $(echo "$response" | jq -r '.status') == "200" ]]; then
-        echo "$response" | jq -r '.data'
-    else
-        echo "{}"
     fi
 }
 
@@ -158,9 +82,10 @@ get_additional_user_info() {
 read -p "Enter a Vine vanity or user ID: " vanity
 vanitydata=$(get_vine_user_info "$vanity")
 
-if [[ "$vanitydata" != "Error: Could not retrieve user information." && "$vanitydata" != "Error: Could not retrieve user data." ]]; then
-    username=$(echo "$vanitydata" | jq -r '.username')
-    user_folder=$(create_user_folder "$username" "$vanitydata")
+if [[ $(echo "$vanitydata" | grep -o '"status": *[0-9]*' | grep -o '[0-9]*') == "200" ]]; then
+    username=$(echo "$vanitydata" | grep -o '"username": *"[^"]*"' | grep -o '"[^"]*"$' | tr -d '"')
+    user_folder="./$username"
+    mkdir -p "$user_folder" || { echo "Error: Could not create folder for user $username." >&2; exit 1; }
 
     post_ids=$(collect_post_ids "$vanitydata")
 
