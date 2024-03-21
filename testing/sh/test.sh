@@ -39,7 +39,7 @@ get_vine_user_info() {
 # Function to collect post IDs from user profile data
 collect_post_ids() {
     local profile_data="$1"
-    echo "$profile_data" | grep -o '"postId": *"[^"]*"' | grep -o '"[^"]*"$' | tr -d '"'
+    echo "$profile_data" | grep -o '"postId": *"[^"]*"' | sed 's/"postId": *"\([^"]*\)"/\1/'
 }
 
 # Function to download post data
@@ -53,8 +53,8 @@ download_post_data() {
         local post_folder="${user_folder}/post_${post_id}"
         mkdir -p "$post_folder" || { echo "Error: Could not create folder for post $post_id." >&2; exit 1; }
 
-        local thumbnail_url=$(echo "$response" | grep -o '"thumbnailUrl": *"[^"]*"' | grep -o '"[^"]*"$' | tr -d '"')
-        local video_url=$(echo "$response" | grep -E -o '"videoLowURL": *"[^"]*"' | grep -o '"[^"]*"$' | tr -d '"')
+        local thumbnail_url=$(echo "$response" | grep -o '"thumbnailUrl": *"[^"]*"' | sed 's/"thumbnailUrl": *"\([^"]*\)"/\1/')
+        local video_url=$(echo "$response" | grep -E -o '"videoLowURL": *"[^"]*"' | sed 's/"videoLowURL": *"\([^"]*\)"/\1/')
 
         curl -s "$thumbnail_url" -o "${post_folder}/${post_id}_thumbnail.jpg" || { echo "Error: Could not download thumbnail for post $post_id." >&2; exit 1; }
 
@@ -72,7 +72,7 @@ read -p "Enter a Vine vanity or user ID: " vanity
 vanitydata=$(get_vine_user_info "$vanity")
 
 if [[ $vanitydata == *"\"status\":200"* ]]; then
-    username=$(echo "$vanitydata" | grep -o '"username": *"[^"]*"' | grep -o '"[^"]*"$' | tr -d '"')
+    username=$(echo "$vanitydata" | grep -o '"username": *"[^"]*"' | sed 's/"username": *"\([^"]*\)"/\1/')
     user_folder="./$username"
     mkdir -p "$user_folder" || { echo "Error: Could not create folder for user $username." >&2; exit 1; }
 
