@@ -1,23 +1,12 @@
 #!/bin/bash
 
-# Function to install jq using Homebrew
-install_jq() {
-    echo "Installing jq..."
-    brew install jq
-}
-
-# Check if jq is installed, if not, install it
-if ! command -v jq &> /dev/null; then
-    install_jq
-fi
-
 # Function to retrieve user data from Vine API
 get_vine_user_data() {
     local user_id_str=$1
     local url="https://archive.vine.co/profiles/_/${user_id_str}.json"
     local response=$(curl -s "$url")
 
-    if [[ $(echo "$response" | grep -o '"status": *[0-9]*' | grep -o '[0-9]*') == "200" ]]; then
+    if [[ $response == *"\"status\":200"* ]]; then
         echo "$response"
     else
         echo "Error: Could not retrieve user data." >&2
@@ -39,7 +28,7 @@ get_vine_user_info() {
 
     response=$(curl -s "$url")
 
-    if [[ $(echo "$response" | grep -o '"status": *[0-9]*' | grep -o '[0-9]*') == "200" ]]; then
+    if [[ $response == *"\"status\":200"* ]]; then
         echo "$response"
     else
         echo "Error: Could not retrieve user information." >&2
@@ -60,7 +49,7 @@ download_post_data() {
     local url="https://archive.vine.co/posts/${post_id}.json"
     local response=$(curl -s "$url")
 
-    if [[ $(echo "$response" | grep -o '"status": *[0-9]*' | grep -o '[0-9]*') == "200" ]]; then
+    if [[ $response == *"\"status\":200"* ]]; then
         local post_folder="${user_folder}/post_${post_id}"
         mkdir -p "$post_folder" || { echo "Error: Could not create folder for post $post_id." >&2; exit 1; }
 
@@ -82,7 +71,7 @@ download_post_data() {
 read -p "Enter a Vine vanity or user ID: " vanity
 vanitydata=$(get_vine_user_info "$vanity")
 
-if [[ $(echo "$vanitydata" | grep -o '"status": *[0-9]*' | grep -o '[0-9]*') == "200" ]]; then
+if [[ $vanitydata == *"\"status\":200"* ]]; then
     username=$(echo "$vanitydata" | grep -o '"username": *"[^"]*"' | grep -o '"[^"]*"$' | tr -d '"')
     user_folder="./$username"
     mkdir -p "$user_folder" || { echo "Error: Could not create folder for user $username." >&2; exit 1; }
