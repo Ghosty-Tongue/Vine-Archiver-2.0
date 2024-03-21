@@ -1,5 +1,12 @@
 #!/bin/bash
 
+# Check if jq is installed, if not, install it
+if ! command -v jq &> /dev/null; then
+    echo "jq is not installed. Installing..."
+    sudo apt-get update
+    sudo apt-get install jq -y
+fi
+
 # Function to retrieve user data from Vine API
 get_vine_user_data() {
     local user_id_str=$1
@@ -134,7 +141,7 @@ download_file() {
 get_additional_user_info() {
     local user_id_str="$1"
     local url="https://vine.co/api/users/profiles/${user_id_str}"
-    local response=$(curl -s "$url")
+    localresponse=$(curl -s "$url")
 
     if [[ $(echo "$response" | jq -r '.status') == "200" ]]; then
         echo "$response" | jq -r '.data'
@@ -144,13 +151,14 @@ get_additional_user_info() {
 }
 
 # Main script starts here
-read -p "Enter a vine vanity or user ID: " vanitydata=$(get_vine_user_info "$vanity")
+read -p "Enter a vine vanity or user ID: " vanity
+vanitydata=$(get_vine_user_info "$vanity")
 
-if [[ "$data" != "Error: Could not retrieve user information." && "$data" != "Error: Could not retrieve user data." ]]; then
-    username=$(echo "$data" | jq -r '.username')
-    user_folder=$(create_user_folder "$username" "$data")
+if [[ "$vanitydata" != "Error: Could not retrieve user information." && "$vanitydata" != "Error: Could not retrieve user data." ]]; then
+    username=$(echo "$vanitydata" | jq -r '.username')
+    user_folder=$(create_user_folder "$username" "$vanitydata")
 
-    post_ids=$(collect_post_ids "$data")
+    post_ids=$(collect_post_ids "$vanitydata")
 
     if [[ -z "$post_ids" ]]; then
         echo "No posts found for the user."
