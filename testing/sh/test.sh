@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Function to install jq using brew
+# Function to install jq using Homebrew
 install_jq() {
     echo "Installing jq..."
     brew install jq
@@ -133,7 +133,7 @@ Follower Count: $(echo "$additional_info" | jq -r '.followerCount // "N/A"')
 EOF
 }
 
-# Function to download a file from URL
+# Function to download # a file from URL
 download_file() {
     local url="$1"
     local folder="$2"
@@ -155,7 +155,7 @@ get_additional_user_info() {
 }
 
 # Main script starts here
-read -p "Enter a vine vanity or user ID: " vanity
+read -p "Enter a Vine vanity or user ID: " vanity
 vanitydata=$(get_vine_user_info "$vanity")
 
 if [[ "$vanitydata" != "Error: Could not retrieve user information." && "$vanitydata" != "Error: Could not retrieve user data." ]]; then
