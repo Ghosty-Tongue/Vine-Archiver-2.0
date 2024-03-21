@@ -141,7 +141,7 @@ download_file() {
 get_additional_user_info() {
     local user_id_str="$1"
     local url="https://vine.co/api/users/profiles/${user_id_str}"
-    localresponse=$(curl -s "$url")
+    local response=$(curl -s "$url")
 
     if [[ $(echo "$response" | jq -r '.status') == "200" ]]; then
         echo "$response" | jq -r '.data'
