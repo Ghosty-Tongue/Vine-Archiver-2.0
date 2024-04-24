@@ -68,3 +68,7 @@ The downloaded post data is organized in folders within the user's directory.
 After collecting post IDs, the script prompts you to choose whether to download data for each post. If selected, it utilizes ThreadPoolExecutor to download posts concurrently.
 
 Feel free to customize and enhance the script as needed.
+
+## Reminder
+
+This will be archived once VIne comes back (only if it comes back while killing the orginal vine videos)
