@@ -71,4 +71,4 @@ Feel free to customize and enhance the script as needed.
 
 ## Reminder
 
-This will be archived once VIne comes back (only if it comes back while killing the original vine videos)
+This will be archived once Vine comes back (only if it comes back while killing the original vine videos)
